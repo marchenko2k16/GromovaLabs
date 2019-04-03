@@ -1,45 +1,41 @@
+//лаба
 #include <queue>
 #include <thread>
+//флоу контрол
+#include <mutex>
+//#include <chrono>
+//графен
+#include <SFML/Graphics.hpp>
+//отрисовка и корректировка
 #include <string>
 #include <regex>
-#include <mutex>
-
-#include <SFML/Graphics.hpp>
- 
+///////////////////////
 #include <iostream>
+#include "functions.h"
+///////////////////////
 
-std::queue<long> MAIN_QUEUE;
-std::queue<long> FIRST_SIDE_QUEUE;
-std::queue<long> SECOND_SIDE_QUEUE;
-std::queue<long> THIRD_SIDE_QUEUE;
-
-bool stopMain	= false;
-bool stopFirst	= false;
-bool stopSecond	= false;
-bool stopThird	= false;
-bool stopAll	= false;
-
-std::mutex MUTEX;
 
 void buttonPressed(sf::Event e)
 {
-	switch (e.key.code)
+	if(sf::Keyboard::isKeyPressed(sf::Keyboard::Num1))
 	{
-	case sf::Keyboard::Num1:
-		stopMain ? stopMain = false : stopMain = true;
-		break;
-	case sf::Keyboard::Num2:
 		stopFirst ? stopFirst = false : stopFirst = true;
-		break;
-	case sf::Keyboard::Num3:
+	}
+	else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num2))
+	{
 		stopSecond ? stopSecond = false : stopSecond = true;
-		break;
-	case sf::Keyboard::Num4:
+	}
+	else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num3))
+	{
 		stopThird ? stopThird = false : stopThird = true;
-		break;
-	case sf::Keyboard::Num0:
+	}
+	else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num4))
+	{
+		stopMain ? stopMain = false : stopMain = true;
+	}
+	else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num0))
+	{
 		stopAll ? stopAll = false : stopAll = true;
-		break;
 	}
 }
 
@@ -62,7 +58,8 @@ void mainQueueThreadFunction(
 {
 	while (!mainQ.empty())
 	{
-		if (!stop)// && !::stopAll)
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
+		if (!stop && mainQ.size() > 1 && !::stopAll)
 		{
 
 			MUTEX.lock();
@@ -72,17 +69,30 @@ void mainQueueThreadFunction(
 				mainQ.pop();
 			}
 
+			MUTEX.unlock();
+		}
+		if (!stop && mainQ.size() > 1 && !::stopAll)
+		{
+
+			MUTEX.lock();
 			if (!mainQ.empty())
 			{
 				secondSideQ.push(mainQ.front());
 				mainQ.pop();
 			}
 
+			MUTEX.unlock();
+		}
+		if (!stop && mainQ.size() > 1 && !::stopAll)
+		{
+
+			MUTEX.lock();
 			if (!mainQ.empty())
 			{
 				thirdSideQ.push(mainQ.front());
 				mainQ.pop();
 			}
+
 			MUTEX.unlock();
 		}
 	}
@@ -94,15 +104,12 @@ void sideQueueThreadFunction(
 	const bool& stop
 )
 {
-	//if (sideQueue.size() > 1)
-	//{
-	//	return;
-	//}
 
-	if (!stop && sideQueue.size() > 1)// && !::stopAll)
+	while (!sideQueue.empty())
 	{
-		while (!sideQueue.empty())
+		if (!stop && sideQueue.size() > 1 && !::stopAll)
 		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 			MUTEX.lock();
 			mainQ.push(sideQueue.front());
 			sideQueue.pop();
@@ -113,43 +120,30 @@ void sideQueueThreadFunction(
 	}
 }
 
+
 int main()
 {
-
-    fillTheQueue(FIRST_SIDE_QUEUE, 100000);
-	fillTheQueue(SECOND_SIDE_QUEUE, 100000);
-	fillTheQueue(THIRD_SIDE_QUEUE, 100000);
-	fillTheQueue(MAIN_QUEUE, 1000000);
-
-	sf::Font font;
+	fillTheQueue(FIRST_SIDE_QUEUE, 1000);
+	fillTheQueue(SECOND_SIDE_QUEUE, 1000);
+	fillTheQueue(THIRD_SIDE_QUEUE, 1000);
+	fillTheQueue(MAIN_QUEUE, 1000);
+	
+	//SUM_OF_ELEMENTS = FIRST_SIDE_QUEUE.size() + SECOND_SIDE_QUEUE.size() + THIRD_SIDE_QUEUE.size() + MAIN_QUEUE.size();
 	font.loadFromFile("Pixel-Miners.otf");
 	
-	sf::Text mainQueue;
-	sf::Text firstQueue;
-	sf::Text secondQueue;
-	sf::Text thirdQueue;
-	
-	mainQueue.setPosition(0, 0);
-	mainQueue.setCharacterSize(35);
-	mainQueue.setFont(font);
 	std::string mainQueueStr("MAIN QUEUE " + std::to_string(MAIN_QUEUE.size()));
-	
-	firstQueue.setPosition(0, 100);
-	firstQueue.setCharacterSize(20);
-	firstQueue.setFont(font);
-	std::string firstQueueStr("FIRST QUEUE " + std::to_string(FIRST_SIDE_QUEUE.size()));
-	
-	secondQueue.setPosition(0, 200);
-	secondQueue.setCharacterSize(20);
-	secondQueue.setFont(font);
-	std::string secondQueueStr("SECOND QUEUE " + std::to_string(SECOND_SIDE_QUEUE.size()));
-	
-	thirdQueue.setPosition(0, 300);
-	thirdQueue.setCharacterSize(20);
-	thirdQueue.setFont(font);
-	std::string thirdQueueStr("THIRD QUEUE " + std::to_string(THIRD_SIDE_QUEUE.size()));
+	functions::initText(mainQueueText, 0, 0, 35, font, mainQueueStr);
 
+	std::string firstQueueStr("FIRST QUEUE " + std::to_string(FIRST_SIDE_QUEUE.size()));
+	functions::initText(firstQueueText, 0, 100, 25, font, mainQueueStr);
 	
+	std::string secondQueueStr("SECOND QUEUE " + std::to_string(SECOND_SIDE_QUEUE.size()));
+	functions::initText(secondQueueText, 0, 200, 25, font, secondQueueStr);
+	
+	std::string thirdQueueStr("THIRD QUEUE " + std::to_string(THIRD_SIDE_QUEUE.size()));
+	functions::initText(thirdQueueText, 0, 300, 25, font,  thirdQueueStr);
+
+
 	std::thread mainThread(
 		mainQueueThreadFunction,
 		std::ref(MAIN_QUEUE),
@@ -194,36 +188,45 @@ int main()
 	sf::Event e;
 	wnd.pollEvent(e);
 
-	while (e.key.code != sf::Keyboard::F)
+	while (wnd.isOpen())
 	{
-		wnd.pollEvent(e);
-		if (e.type == sf::Event::EventType::Closed)
+		while (wnd.pollEvent(e))
 		{
-			wnd.close();
-			continue;
+			if (e.type == sf::Event::EventType::Closed)
+			{
+				wnd.close();
+			}
+			functions::buttonPressed(e);
+			{
+				functions::clearCmd();
+				//////////////////////////////////////////////////////////////////////////////
+				std::cout << "stopFirst " << stopFirst << std::endl;
+				std::cout << "stopSecond " << stopSecond << std::endl;
+				std::cout << "stopThird " << stopThird << std::endl;
+				std::cout << "stopMain " << stopMain << std::endl;
+				std::cout << "stopAll " << stopAll << std::endl;
+				std::cout << std::endl;
+				//////////////////////////////////////////////////////////////////////////////
+			}
 		}
-			
-		buttonPressed(e);
-
-		mainQueue.setString(mainQueueStr);
-		firstQueue.setString(firstQueueStr);
-		secondQueue.setString(secondQueueStr);
-		thirdQueue.setString(thirdQueueStr);
+		mainQueueText.setString(mainQueueStr);
+		firstQueueText.setString(firstQueueStr);
+		secondQueueText.setString(secondQueueStr);
+		thirdQueueText.setString(thirdQueueStr);
 
 		wnd.clear(sf::Color::Black);
 
-		wnd.draw(mainQueue);
-		wnd.draw(firstQueue);
-		wnd.draw(secondQueue);
-		wnd.draw(thirdQueue);
-		wnd.display();
-		
 		mainQueueStr	= std::regex_replace(mainQueueStr, replaceCurrentNumber, std::to_string(MAIN_QUEUE.size()));
 		firstQueueStr	= std::regex_replace(firstQueueStr, replaceCurrentNumber, std::to_string(FIRST_SIDE_QUEUE.size()));
 		secondQueueStr	= std::regex_replace(secondQueueStr, replaceCurrentNumber, std::to_string(SECOND_SIDE_QUEUE.size()));
 		thirdQueueStr	= std::regex_replace(thirdQueueStr, replaceCurrentNumber, std::to_string(THIRD_SIDE_QUEUE.size()));
+
+		functions::makeBeautiful();
+		wnd.draw(mainQueueText);
+		wnd.draw(firstQueueText);
+		wnd.draw(secondQueueText);
+		wnd.draw(thirdQueueText);
+		wnd.display();
 	}
-	wnd.close();
-	
 	return 0;
 }
